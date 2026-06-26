@@ -1,0 +1,1153 @@
+html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Visitor Safety Induction – PARE HEP 2×55 MW</title>
+<style>
+  :root {
+    --navy: #0A1628; --blue: #0D3B6E; --steel: #1A5276;
+    --accent: #F39C12; --danger: #C0392B; --safe: #1E8449;
+    --light: #EBF5FB; --white: #FFFFFF; --gray: #7F8C8D;
+    --border: #D5D8DC; --text: #1C2833;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #F0F3F4; color: var(--text); padding-bottom: 100px; }
+
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 60%, var(--steel) 100%);
+    color: white; padding: 40px 24px 32px; text-align: center;
+    border-bottom: 4px solid var(--accent);
+  }
+  .badge {
+    display: inline-block; background: var(--accent); color: var(--navy);
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; padding: 4px 14px;
+    border-radius: 2px; text-transform: uppercase; margin-bottom: 16px;
+  }
+  header h1 { font-size: clamp(22px, 5vw, 36px); font-weight: 800; letter-spacing: -0.5px; }
+  header p { margin-top: 8px; font-size: 14px; color: #AED6F1; }
+
+  #progress-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--navy); padding: 10px 20px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  #progress-bar span { color: #AED6F1; font-size: 12px; white-space: nowrap; }
+  .progress-track { flex: 1; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.4s ease; width: 0%; }
+  #step-label { color: white; font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+  .section { display: none; max-width: 860px; margin: 28px auto; padding: 0 16px; }
+  .section.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+  .card {
+    background: var(--white); border-radius: 10px; padding: 28px 28px 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px;
+  }
+  .card h2 { font-size: 20px; font-weight: 700; color: var(--blue); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .card h2 .icon { font-size: 24px; }
+  .card h3 { font-size: 15px; font-weight: 700; color: var(--navy); margin: 16px 0 8px; }
+  .card p, .card li { font-size: 14px; line-height: 1.7; color: #2C3E50; }
+  .card ul, .card ol { padding-left: 20px; }
+  .card li { margin-bottom: 6px; }
+
+  .hero-card {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+    color: white; border-radius: 10px; padding: 40px 28px; text-align: center;
+    margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+  .hero-card .big-icon { font-size: 56px; margin-bottom: 16px; }
+  .hero-card h2 { font-size: 26px; font-weight: 800; color: white; margin-bottom: 8px; }
+  .hero-card p { color: #AED6F1; font-size: 15px; line-height: 1.6; }
+
+  .rules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 16px; }
+  .rule-card { background: var(--light); border-left: 4px solid var(--blue); border-radius: 6px; padding: 14px 16px; }
+  .rule-card .rule-num { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+  .rule-card .rule-title { font-size: 14px; font-weight: 700; color: var(--navy); margin: 4px 0; }
+  .rule-card p { font-size: 12px; color: #555; line-height: 1.5; }
+
+  .ppe-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+  .ppe-item { display: flex; align-items: center; gap: 10px; background: var(--light); border-radius: 8px; padding: 12px 16px; min-width: 160px; flex: 1; }
+  .ppe-item .ppe-icon { font-size: 28px; }
+  .ppe-item span { font-size: 13px; font-weight: 600; color: var(--navy); }
+
+  .alert { border-radius: 8px; padding: 14px 18px; margin-bottom: 14px; font-size: 13.5px; line-height: 1.6; }
+  .alert-danger { background: #FDEDEC; border-left: 4px solid var(--danger); color: #7B241C; }
+  .alert-safe { background: #EAFAF1; border-left: 4px solid var(--safe); color: #145A32; }
+  .alert-warn { background: #FEF9E7; border-left: 4px solid var(--accent); color: #7D6608; }
+  .alert strong { font-weight: 700; }
+
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 6px; margin-bottom: 6px; background: #FDFEFE; border: 1px solid var(--border); font-size: 13.5px; }
+  .checklist li input[type="checkbox"] { margin-top: 2px; accent-color: var(--blue); transform: scale(1.2); flex-shrink: 0; }
+
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+  .form-group label .req { color: var(--danger); }
+  .form-group input, .form-group select {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; font-size: 14px; color: var(--text); transition: border-color 0.2s; background: white;
+  }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(13,59,110,0.1); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media(max-width: 540px) { .form-row { grid-template-columns: 1fr; } }
+
+  .consent-box { background: #F4F6F7; border: 2px solid var(--border); border-radius: 8px; padding: 20px; margin: 20px 0; }
+  .consent-box p { font-size: 13px; line-height: 1.7; color: #444; }
+  .consent-check { display: flex; gap: 12px; align-items: flex-start; margin-top: 14px; padding: 12px; background: white; border-radius: 6px; border: 1.5px solid var(--border); }
+  .consent-check input { transform: scale(1.3); margin-top: 2px; flex-shrink: 0; accent-color: var(--blue); }
+  .consent-check label { font-size: 13px; font-weight: 600; color: var(--navy); line-height: 1.5; }
+
+  .btn-row { display: flex; gap: 12px; justify-content: space-between; margin-top: 24px; flex-wrap: wrap; }
+  .btn { padding: 12px 28px; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; letter-spacing: 0.3px; }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: var(--navy); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,59,110,0.3); }
+  .btn-secondary { background: var(--border); color: var(--navy); }
+  .btn-secondary:hover { background: #C0C0C0; }
+  .btn-success { background: var(--safe); color: white; }
+  .btn-success:hover { background: #155A2C; transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+  .success-screen { text-align: center; padding: 40px 20px; }
+  .success-screen .tick { font-size: 64px; margin-bottom: 16px; }
+  .success-screen h2 { font-size: 24px; color: var(--safe); font-weight: 800; }
+  .success-screen p { font-size: 15px; color: var(--gray); margin-top: 10px; line-height: 1.6; }
+  .pass-id { display: inline-block; background: var(--light); border: 2px solid var(--blue); border-radius: 8px; padding: 16px 28px; margin: 20px auto; font-size: 22px; font-weight: 800; color: var(--navy); letter-spacing: 2px; }
+
+  .emg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 14px; }
+  .emg-card { background: #FDEDEC; border-radius: 8px; padding: 16px; text-align: center; border: 1px solid #F1948A; }
+  .emg-card .emg-icon { font-size: 30px; }
+  .emg-card .emg-label { font-size: 12px; color: #922B21; font-weight: 700; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .emg-card .emg-num { font-size: 18px; color: var(--danger); font-weight: 800; margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 10px; }
+  th { background: var(--blue); color: white; padding: 10px 14px; text-align: left; font-weight: 700; }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+  tr:nth-child(even) td { background: #F8F9FA; }
+
+  .quiz-q { background: var(--light); border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
+  .quiz-q p { font-weight: 600; font-size: 14px; margin-bottom: 12px; }
+  .quiz-opt { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-opt label { display: flex; align-items: center; gap: 10px; font-size: 13.5px; cursor: pointer; padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--border); background: white; transition: border-color 0.2s; }
+  .quiz-opt label:hover { border-color: var(--blue); }
+  .quiz-opt input[type="radio"] { accent-color: var(--blue); }
+  .quiz-feedback { font-size: 13px; font-weight: 700; margin-top: 8px; padding: 6px 12px; border-radius: 4px; display: none; }
+  .correct { background: #EAFAF1; color: var(--safe); }
+  .wrong { background: #FDEDEC; color: var(--danger); }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab-btn { padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--border); font-size: 12px; font-weight: 700; cursor: pointer; background: white; color: var(--navy); transition: all 0.2s; }
+  .tab-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* Spinner overlay */
+  #submit-overlay { display: none; position: fixed; inset: 0; background: rgba(10,22,40,0.8); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+  #submit-overlay.show { display: flex; }
+  .spinner { width: 52px; height: 52px; border: 5px solid rgba(255,255,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #submit-overlay p { color: white; font-size: 15px; font-weight: 600; }
+
+  /* ── HINDI VOICE PLAYER BAR ─────────────────────────────────────── */
+  #voice-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 500;
+    background: linear-gradient(90deg, #060E1A 0%, #0D2348 60%, #0A1628 100%);
+    border-top: 2px solid var(--accent);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    flex-wrap: wrap;
+  }
+
+  .vb-lang-badge {
+    background: var(--accent);
+    color: var(--navy);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .vb-icon { font-size: 20px; flex-shrink: 0; }
+
+  .vb-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+  .vb-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .vb-btn-play {
+    background: var(--accent);
+    color: var(--navy);
+    width: 44px; height: 44px;
+    font-size: 18px;
+  }
+  .vb-btn-play:hover { background: #e8890e; transform: scale(1.05); }
+  .vb-btn-stop {
+    background: rgba(255,255,255,0.12);
+    color: #ccc;
+  }
+  .vb-btn-stop:hover { background: rgba(192,57,43,0.4); color: white; }
+  .vb-btn-replay {
+    background: rgba(255,255,255,0.10);
+    color: #aaa;
+  }
+  .vb-btn-replay:hover { background: rgba(255,255,255,0.2); color: white; }
+
+  .vb-status-wrap { flex: 1; min-width: 120px; }
+  .vb-status {
+    color: #AED6F1;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+  }
+  .vb-sub {
+    color: #5a8ab0;
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+  /* Waveform animation when speaking */
+  .vb-wave { display: flex; align-items: flex-end; gap: 2px; height: 20px; flex-shrink: 0; }
+  .vb-wave span {
+    display: inline-block; width: 3px; background: var(--accent);
+    border-radius: 2px; height: 4px;
+    transition: height 0.1s;
+  }
+  .vb-wave.playing span:nth-child(1) { animation: wave1 0.9s ease-in-out infinite; }
+  .vb-wave.playing span:nth-child(2) { animation: wave2 0.9s ease-in-out infinite 0.15s; }
+  .vb-wave.playing span:nth-child(3) { animation: wave3 0.9s ease-in-out infinite 0.30s; }
+  .vb-wave.playing span:nth-child(4) { animation: wave2 0.9s ease-in-out infinite 0.45s; }
+  .vb-wave.playing span:nth-child(5) { animation: wave1 0.9s ease-in-out infinite 0.60s; }
+  @keyframes wave1 { 0%,100%{height:4px} 50%{height:16px} }
+  @keyframes wave2 { 0%,100%{height:8px} 50%{height:20px} }
+  @keyframes wave3 { 0%,100%{height:12px} 50%{height:4px} }
+
+  .vb-speed-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .vb-speed-wrap label { color: #5a8ab0; font-size: 10px; font-weight: 700; }
+  .vb-speed {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .vb-speed:focus { outline: none; }
+  .vb-speed option { background: #0D2348; }
+
+  .vb-no-support {
+    color: #e87070;
+    font-size: 11px;
+    font-style: italic;
+  }
+
+  /* Reading highlight pulse on active section */
+  .reading-active {
+    outline: 2px solid rgba(243,156,18,0.4);
+    outline-offset: 3px;
+    border-radius: 4px;
+    transition: outline 0.2s;
+  }
+
+  @media(max-width: 540px) {
+    #voice-bar { gap: 8px; padding: 8px 12px; }
+    .vb-status { max-width: 140px; }
+    .vb-speed-wrap label { display: none; }
+  }
+
+  @media print { #progress-bar, .btn-row, #voice-bar { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- Spinner shown during Google Form submission -->
+<div id="submit-overlay">
+  <div class="spinner"></div>
+  <p>Submitting your entry, please wait…</p>
+</div>
+
+<header>
+  <div class="badge">ANDRITZ O&amp;M Pvt. Ltd.</div>
+  <h1>&#9889; Visitor Safety Induction</h1>
+  <p>PARE HEP 2&#xD7;55 MW | Papumpare District, Arunachal Pradesh | Client: NEEPCO</p>
+</header>
+
+<div id="progress-bar">
+  <span>Progress</span>
+  <div class="progress-track"><div class="progress-fill" id="pfill"></div></div>
+  <span id="step-label">Step 1 / 7</span>
+</div>
+
+<!-- ── SECTION 1 – Welcome ── -->
+<div class="section active" id="sec1">
+  <div class="hero-card">
+    <div class="big-icon">&#127959;</div>
+    <h2>Welcome to PARE HEP Site</h2>
+    <p>This short induction ensures your visit is safe. Please read every section carefully.<br/>Completion is <strong>mandatory</strong> before entering the powerhouse.</p>
+  </div>
+  <div class="card">
+    <h2><span class="icon">&#127981;</span>Site Overview</h2>
+    <table>
+      <tr><th>Detail</th><th>Information</th></tr>
+      <tr><td>Project</td><td>Run-off the River Hydro Power Station — River Pare</td></tr>
+      <tr><td>Capacity</td><td>110 MW (2&#xD7;55 MW Vertical Francis Turbines)</td></tr>
+      <tr><td>Rated Speed</td><td>187.5 RPM</td></tr>
+      <tr><td>Powerhouse Height</td><td>48.10 m</td></tr>
+      <tr><td>Powerhouse Length</td><td>68.00 m</td></tr>
+      <tr><td>Powerhouse Width</td><td>31.00 m</td></tr>
+      <tr><td>Client</td><td>NEEPCO</td></tr>
+      <tr><td>Contractor</td><td>Andritz O&amp;M Pvt. Ltd.</td></tr>
+      <tr><td>Operation Mode</td><td>Operation &amp; Maintenance (24&#xD7;7)</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2><span class="icon">&#9200;</span>Working Shifts</h2>
+    <table>
+      <tr><th>Shift</th><th>Timing</th></tr>
+      <tr><td>General (Maintenance)</td><td>09:00 AM – 06:00 PM</td></tr>
+      <tr><td>Morning (Operation)</td><td>07:00 AM – 02:00 PM</td></tr>
+      <tr><td>Evening (Operation)</td><td>02:00 PM – 10:00 PM</td></tr>
+      <tr><td>Night (Operation)</td><td>10:00 PM – 07:00 AM</td></tr>
+    </table>
+  </div>
+  <div class="btn-row">
+    <span></span>
+    <button class="btn btn-primary" onclick="goTo(2)">Next: Safety Commitment &#8594;</button>
+  </div>
+</div>
+
+<!-- ── SECTION 2 – Safety Policy ── -->
+<div class="section" id="sec2">
+  <div class="card">
+    <h2><span class="icon">&#129309;</span>Committed to No Harm</h2>
+    <div class="alert alert-safe"><strong>"No one gets hurt – That's the goal."</strong><br/>At ANDRITZ, excellence begins with Health and Safety. We protect everyone we impact — employees, contractors, and visitors.</div>
+    <p>Safety is not separate from work — it is built into everything we do. Safety comes before short-term targets or pressure. We speak up, take action, and look out for each other.</p>
+    <h3>What this means for everyone on site:</h3>
+    <ul>
+      <li><strong>Leaders</strong> prioritize safety in every decision, even under pressure.</li>
+      <li><strong>Supervisors</strong> set expectations, give guidance, and stop unsafe work.</li>
+      <li><strong>Every person on site</strong> follows the rules and looks out for their team.</li>
+    </ul>
+    <div class="alert alert-warn" style="margin-top:16px;"><strong>CEO Commitment:</strong> "A bad financial result can be recovered, but harm to someone's life cannot be undone."</div>
+  </div>
+  <div class="card">
+    <h2><span class="icon">&#128203;</span>Health, Safety &amp; Environmental Policy</h2>
+    <p>ANDRITZ is unconditionally committed to compliance with all relevant legal requirements and applicable standards regarding health, safety, and environmental protection. Key commitments include:</p>
+    <ul style="margin-top:10px;">
+      <li>Continual improvement of HSE management systems and processes.</li>
+      <li>Providing a safe, secure, and suitable working environment for all.</li>
+      <li>Regular hazard identification, risk assessment, and mitigation.</li>
+      <li>Environmental protection and prevention of pollution.</li>
+      <li>Open communication and consultation with employees, contractors, and stakeholders.</li>
+    </ul>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(1)">&#8592; Back</button>
+    <button class="btn btn-primary" onclick="goTo(3)">Next: 8 Life-Saving Rules &#8594;</button>
+  </div>
+</div>
+
+<!-- ── SECTION 3 – 8 Life-Saving Rules ── -->
+<div class="section" id="sec3">
+  <div class="card">
+    <h2><span class="icon">&#128737;</span>The 8 Life-Saving Rules</h2>
+    <div class="alert alert-danger"><strong>&#9888;&#65039; Violation of any Life-Saving Rule is a serious safety breach and may result in immediate removal from site.</strong></div>
+    <div class="rules-grid">
+      <div class="rule-card"><div class="rule-num">Rule 1</div><div class="rule-title">&#128203; Permit to Work</div><p>Obtain a valid permit before starting any critical activity. Permits ensure risks are identified and managed.</p></div>
+      <div class="rule-card"><div class="rule-num">Rule 2</div><div class="rule-title">&#9889; Control Hazardous Energy</div><p>Isolate or control all hazardous energy sources (LOTO) before starting maintenance or commissioning work.</p></div>
+      <div class="rule-card"><div class="rule-num">Rule 3</div><div class="rule-title">&#129495; Work at Heights</div><p>Plan ahead. Ensure the area is safe, rescue plan is ready, and correct equipment is in place before working at altitude.</p></div>
+      <div class="rule-card"><div class="rule-num">Rule 4</div><div class="rule-title">&#127959; Lift Securely</div><p>Only trained persons assess loads. Restrict and isolate the lifting area and rig the load correctly before lifting.</p></div>
+      <div class="rule-card"><div class="rule-num">Rule 5</div><div class="rule-title">&#128295; Use Tools Correctly</div><p>Use tools and machines as intended. Inspect before use, maintain them well, and control the danger zone.</p></div>
+      <div class="rule-card"><div class="rule-num">Rule 6</div><div class="rule-title">&#129504; Be Ready for Action</div><p>Be physically and mentally fit. Never work under the influence of alcohol, drugs, or any impairing substance.</p></div>
+      <div class="rule-card"><div class="rule-num">Rule 7</div><div class="rule-title">&#128663; Drive Safely</div><p>Ensure all vehicles are in good condition. Drivers must follow all regulations. Only site vehicles enter the powerhouse.</p></div>
+      <div class="rule-card"><div class="rule-num">Rule 8</div><div class="rule-title">&#128682; Confined Spaces</div><p>Conduct atmospheric tests, have a qualified watchperson, prepare a rescue plan, and use correct equipment from the permit.</p></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2><span class="icon">&#128161;</span>Why Do We Follow Safety?</h2>
+    <p>Accidents carry two kinds of costs:</p>
+    <h3>Direct Costs (Visible)</h3>
+    <ul>
+      <li>Compensation to injured/deceased workers</li>
+      <li>Medical treatment (first aid, hospital)</li>
+      <li>Repair or replacement of damaged equipment</li>
+      <li>Legal fines or penalties</li>
+    </ul>
+    <h3>Indirect Costs (Hidden – like the iceberg beneath the surface)</h3>
+    <ul>
+      <li>Lost production and project delays</li>
+      <li>Training and replacement of injured workers</li>
+      <li>Loss of company reputation and goodwill</li>
+      <li>Worker morale and motivation loss</li>
+      <li>Legal proceedings and administrative time</li>
+    </ul>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(2)">&#8592; Back</button>
+    <button class="btn btn-primary" onclick="goTo(4)">Next: Visitor Instructions &#8594;</button>
+  </div>
+</div>
+
+<!-- ── SECTION 4 – Visitor Instructions + PPE ── -->
+<div class="section" id="sec4">
+  <div class="card">
+    <h2><span class="icon">&#129510;</span>Mandatory PPE for Visitors</h2>
+    <div class="alert alert-danger"><strong>These items are NON-NEGOTIABLE. You will not be permitted on site without them.</strong></div>
+    <div class="ppe-grid">
+      <div class="ppe-item"><span class="ppe-icon">&#9937;&#65039;</span><span>Safety Helmet</span></div>
+      <div class="ppe-item"><span class="ppe-icon">&#128095;</span><span>Safety Shoes</span></div>
+      <div class="ppe-item"><span class="ppe-icon">&#129510;</span><span>Reflective Jacket</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2><span class="icon">&#128204;</span>Visitor Instructions</h2>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'mandatory')">Mandatory</button>
+      <button class="tab-btn" onclick="switchTab(this,'dos')">Do's</button>
+      <button class="tab-btn" onclick="switchTab(this,'emergency')">Emergency</button>
+    </div>
+    <div class="tab-pane active" id="mandatory">
+      <ul class="checklist" id="mandatory-checks">
+        <li><input type="checkbox" onchange="updateMandatory()"><span>Safety Helmet, Safety Shoes, and Reflective Jacket are worn at all times on site.</span></li>
+        <li><input type="checkbox" onchange="updateMandatory()"><span>Only site vehicles are allowed to enter inside the powerhouse.</span></li>
+        <li><input type="checkbox" onchange="updateMandatory()"><span>You must be accompanied by a concerned person at all times.</span></li>
+        <li><input type="checkbox" onchange="updateMandatory()"><span>I consent to follow all safety rules &amp; instructions by signing this induction document.</span></li>
+        <li><input type="checkbox" onchange="updateMandatory()"><span>Blood Pressure test must be done during induction.</span></li>
+      </ul>
+      <p id="mandatory-status" style="margin-top:12px;font-size:13px;color:var(--gray);">Please tick all items above to proceed.</p>
+    </div>
+    <div class="tab-pane" id="dos">
+      <ul>
+        <li>If you are a doctor or First Aider, please inform the Site Manager / HSE Advisor. Your service may be required during emergencies.</li>
+        <li>Follow all safety instructions displayed in various working areas.</li>
+        <li>Use appropriate PPE as per the area requirement.</li>
+        <li>Do not trip over materials or objects while walking on site — watch your step.</li>
+        <li>Be always aware of your surroundings.</li>
+        <li>If you observe any near miss, accident, incident, or unsafe condition/action — report immediately to the HSE Advisor / Site Manager.</li>
+      </ul>
+    </div>
+    <div class="tab-pane" id="emergency">
+      <div class="alert alert-danger" style="margin-bottom:12px;">
+        <strong>If you hear an emergency hooter or siren:</strong><br/>
+        Follow the safety exit signs → reach the emergency assembly point → stay calm, do not panic → wait for further instruction.
+      </div>
+      <div class="emg-grid">
+        <div class="emg-card"><div class="emg-icon">&#128657;</div><div class="emg-label">Ambulance</div><div class="emg-num">Contact Site HSE</div></div>
+        <div class="emg-card"><div class="emg-icon">&#128658;</div><div class="emg-label">Fire Department</div><div class="emg-num">Contact Site Mgr.</div></div>
+        <div class="emg-card"><div class="emg-icon">&#128222;</div><div class="emg-label">Internal</div><div class="emg-num">HSE: Mr. Surya Kumar</div></div>
+      </div>
+      <h3 style="margin-top:16px;">Types of Emergency on Site</h3>
+      <ul style="margin-top:8px;">
+        <li>Personal (medical emergency, accidents)</li>
+        <li>Fire (domestic or industrial)</li>
+        <li>Biological (epidemics, food poisoning)</li>
+        <li>Disaster (earthquakes, floods, landslides, cyclones)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <h2><span class="icon">&#128273;</span>Permit to Work System</h2>
+    <p>A Permit to Work system operates on site. The following activities <strong>must not</strong> be carried out without an approved Permit to Work and Risk Assessment:</p>
+    <ul style="margin-top:10px;">
+      <li>&#128293; Hot Work</li>
+      <li>&#129495; Work at Height</li>
+      <li>&#127959; Lifting Operations (with Lifting Plan)</li>
+      <li>&#128274; Lockout / Tagout</li>
+      <li>&#128682; Confined Space Entry</li>
+    </ul>
+    <div class="alert alert-warn" style="margin-top:14px;"><strong>Note:</strong> No critical work shall proceed without an approved Permit to Work &amp; Risk Assessment (JSA/RA/Method Statement).</div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(3)">&#8592; Back</button>
+    <button class="btn btn-primary" onclick="goTo(5)">Next: Knowledge Check &#8594;</button>
+  </div>
+</div>
+
+<!-- ── SECTION 5 – Quiz ── -->
+<div class="section" id="sec5">
+  <div class="card">
+    <h2><span class="icon">&#128221;</span>Quick Knowledge Check</h2>
+    <p style="margin-bottom:20px;font-size:14px;">Answer all questions correctly to proceed. You may retry if needed.</p>
+    <div class="quiz-q" id="q1">
+      <p>1. Which PPE items are mandatory before entering the site?</p>
+      <div class="quiz-opt">
+        <label><input type="radio" name="q1" value="a"> Gloves and earplugs only</label>
+        <label><input type="radio" name="q1" value="b"> Safety helmet, safety shoes, and reflective jacket</label>
+        <label><input type="radio" name="q1" value="c"> Just a hard hat is enough</label>
+      </div>
+      <div class="quiz-feedback" id="qf1"></div>
+    </div>
+    <div class="quiz-q" id="q2">
+      <p>2. What should you do when you hear an emergency siren?</p>
+      <div class="quiz-opt">
+        <label><input type="radio" name="q2" value="a"> Continue working until told otherwise</label>
+        <label><input type="radio" name="q2" value="b"> Run towards the exit immediately</label>
+        <label><input type="radio" name="q2" value="c"> Follow exit signs, reach the assembly point, stay calm, and wait for instructions</label>
+      </div>
+      <div class="quiz-feedback" id="qf2"></div>
+    </div>
+    <div class="quiz-q" id="q3">
+      <p>3. Who is responsible for your safety on site?</p>
+      <div class="quiz-opt">
+        <label><input type="radio" name="q3" value="a"> Only the HSE Advisor</label>
+        <label><input type="radio" name="q3" value="b"> Only the Site Manager</label>
+        <label><input type="radio" name="q3" value="c"> Everyone — you, your host, supervisors, and site management</label>
+      </div>
+      <div class="quiz-feedback" id="qf3"></div>
+    </div>
+    <div class="quiz-q" id="q4">
+      <p>4. Can you enter a confined space without a permit?</p>
+      <div class="quiz-opt">
+        <label><input type="radio" name="q4" value="a"> Yes, if the area looks safe</label>
+        <label><input type="radio" name="q4" value="b"> No — a Permit to Work, atmospheric tests, and a watchperson are always required</label>
+        <label><input type="radio" name="q4" value="c"> Only if accompanied by a colleague</label>
+      </div>
+      <div class="quiz-feedback" id="qf4"></div>
+    </div>
+    <div style="margin-top:20px;">
+      <button class="btn btn-primary" onclick="checkQuiz()">Check Answers</button>
+      <span id="quiz-result" style="margin-left:16px;font-size:14px;font-weight:700;"></span>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goTo(4)">&#8592; Back</button>
+    <button class="btn btn-primary" id="btn-quiz-next" disabled onclick="goTo(6)">Next: Register Entry &#8594;</button>
+  </div>
+</div>
+
+<!-- ── SECTION 6 – Visitor Registration Form ── -->
+<div class="section" id="sec6">
+  <div class="card">
+    <h2><span class="icon">&#128203;</span>Visitor Entry Registration</h2>
+    <p style="font-size:13.5px;margin-bottom:20px;color:var(--gray);">All fields marked <span style="color:var(--danger);">*</span> are required.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Full Name <span class="req">*</span></label>
+        <input type="text" id="f-name" placeholder="e.g. Ramesh Kumar" required/>
+      </div>
+      <div class="form-group">
+        <label>Organisation / Company <span class="req">*</span></label>
+        <input type="text" id="f-org" placeholder="e.g. NEEPCO" required/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Mobile Number <span class="req">*</span></label>
+        <input type="tel" id="f-mobile" placeholder="+91 XXXXX XXXXX" required/>
+      </div>
+      <div class="form-group">
+        <label>Purpose of Visit <span class="req">*</span></label>
+        <select id="f-purpose">
+          <option value="">— Select —</option>
+          <option>Official Inspection</option>
+          <option>Client Visit (NEEPCO)</option>
+          <option>Vendor / Supplier</option>
+          <option>Contractor Meeting</option>
+          <option>Government / Regulatory</option>
+          <option>Media / Press</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Area to be Visited <span class="req">*</span></label>
+        <select id="f-area">
+          <option value="">— Select —</option>
+          <option>Powerhouse (Machine Hall)</option>
+          <option>Control Room</option>
+          <option>Switchyard</option>
+          <option>Dam / Reservoir</option>
+          <option>Office Area</option>
+          <option>Fabrication Yard</option>
+          <option>Multiple Areas</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Hosted By (Site Contact Name) <span class="req">*</span></label>
+        <input type="text" id="f-host" placeholder="Name of ANDRITZ/NEEPCO person receiving you" required/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Date of Visit <span class="req">*</span></label>
+      <input type="date" id="f-date" required/>
+    </div>
+    <div class="form-group">
+      <label>Expected Time In <span class="req">*</span></label>
+      <input type="time" id="f-timein" required/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>ID Proof Type <span class="req">*</span></label>
+        <select id="f-idtype">
+          <option value="">— Select —</option>
+          <option>Aadhaar Card</option>
+          <option>Passport</option>
+          <option>Driving Licence</option>
+          <option>Company ID</option>
+          <option>Government ID</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>ID Proof Number <span class="req">*</span></label>
+        <input type="text" id="f-idnum" placeholder="Enter ID number"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Blood Pressure Reading (taken at site) <span class="req">*</span></label>
+      <input type="text" id="f-bp" placeholder="e.g. 120/80 mmHg"/>
+    </div>
+    <div class="consent-box">
+      <p>By checking below, I confirm that I have completed the Safety Induction for PARE HEP 2&#xD7;55 MW site and agree to:</p>
+      <ul style="margin: 10px 0 0 16px; font-size:13px; line-height:1.7; color:#444;">
+        <li>Wear the mandatory PPE (Safety Helmet, Safety Shoes, Reflective Jacket) at all times.</li>
+        <li>Follow all instructions from site management, supervisors, and HSE Advisor.</li>
+        <li>Report any unsafe conditions, near-misses, or incidents immediately.</li>
+        <li>Evacuate calmly to the assembly point when alerted by emergency siren.</li>
+        <li>Not enter any restricted area without an authorized escort.</li>
+      </ul>
+      <div class="consent-check">
+        <input type="checkbox" id="consent-cb" onchange="updateConsentBtn()"/>
+        <label for="consent-cb">I have read, understood, and agree to comply with all safety rules and visitor instructions during my visit to PARE HEP site.</label>
+      </div>
+    </div>
+    <div id="form-error" class="alert alert-danger" style="display:none;margin-top:12px;"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goTo(5)">&#8592; Back</button>
+      <button class="btn btn-success" id="btn-submit" disabled onclick="submitForm()">&#10004; Submit &amp; Complete Induction</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 7 – Success ── -->
+<div class="section" id="sec7">
+  <div class="card">
+    <div class="success-screen">
+      <div class="tick">&#9989;</div>
+      <h2>Induction Complete!</h2>
+      <p>You have successfully completed the PARE HEP Visitor Safety Induction.<br/>Your entry has been submitted to the site log.</p>
+      <div class="pass-id" id="pass-id">VIS-000001</div>
+      <p style="font-size:13px;">Please show this Pass ID at the site gate.<br/>Keep this page open or take a screenshot.</p>
+      <div class="alert alert-warn" style="text-align:left; margin-top:24px;">
+        <strong>Remember before entering:</strong><br/>
+        &#9937;&#65039; Helmet &nbsp;|&nbsp; &#128095; Safety Shoes &nbsp;|&nbsp; &#129510; Reflective Jacket<br/>
+        Stay with your host at all times. Report any unsafe conditions to the HSE Advisor.
+      </div>
+      <div class="alert alert-safe" style="text-align:left;margin-top:16px;">
+        <strong>&#128202; Entry recorded in site visitor log.</strong><br/>
+        Your details have been submitted via the Google Form to the HSE team.
+      </div>
+      <button class="btn btn-primary" style="margin-top:20px;" onclick="window.print()">&#128438; Print / Save Pass</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── HINDI VOICE PLAYER BAR ── -->
+<div id="voice-bar">
+  <div class="vb-lang-badge">🎙️ हिंदी</div>
+  <div class="vb-controls">
+    <button class="vb-btn vb-btn-replay" id="vb-replay" title="इस पेज को फिर से पढ़ें (Replay)" onclick="replayVoice()">↩</button>
+    <button class="vb-btn vb-btn-play"  id="vb-playpause" title="सुनें / रुकें (Play / Pause)" onclick="toggleVoice()">▶</button>
+    <button class="vb-btn vb-btn-stop"  id="vb-stop" title="बंद करें (Stop)" onclick="stopVoice()">■</button>
+  </div>
+  <div class="vb-wave" id="vb-wave">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div class="vb-status-wrap">
+    <div class="vb-status" id="vb-status">▶ Play बटन दबाएं — हिंदी में सुनें</div>
+    <div class="vb-sub" id="vb-sub">Hindi Audio Narration • PARE HEP Safety Induction</div>
+  </div>
+  <div class="vb-speed-wrap">
+    <label>Speed</label>
+    <select class="vb-speed" id="vb-speed" onchange="changeSpeed()">
+      <option value="0.7">0.7×</option>
+      <option value="0.85">0.85×</option>
+      <option value="1.0" selected>1.0×</option>
+      <option value="1.2">1.2×</option>
+      <option value="1.5">1.5×</option>
+    </select>
+  </div>
+  <div class="vb-no-support" id="vb-nosupport" style="display:none;">
+    ⚠️ Browser does not support speech. Use Chrome or Edge.
+  </div>
+</div>
+
+<!-- Hidden iframe — Google Forms POST target -->
+<iframe id="hidden_iframe" name="hidden_iframe" style="display:none;"></iframe>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   HINDI VOICE NARRATION — Section-by-section text in Hindi
+   Uses Web Speech API (built into Chrome / Edge / Safari)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+  var HINDI_SCRIPT = {
+    1: `पारे हाइड्रो इलेक्ट्रिक प्रोजेक्ट में आपका स्वागत है।
+यह एक छोटा लेकिन अनिवार्य सुरक्षा प्रशिक्षण है। कृपया पावरहाउस में प्रवेश करने से पहले इसे ध्यान से पढ़ें।
+
+साइट की जानकारी:
+यह परियोजना अरुणाचल प्रदेश में नदी पारे पर बनी है। इसकी कुल क्षमता एक सौ दस मेगावाट है, जिसमें दो फ्रांसिस टर्बाइन हैं।
+पावरहाउस की ऊंचाई अड़तालीस मीटर, लंबाई अड़सठ मीटर और चौड़ाई इकतीस मीटर है।
+क्लाइंट नीपको है और ठेकेदार एंड्रिट्ज ओ एंड एम प्राइवेट लिमिटेड है।
+यहाँ चौबीसों घंटे, सातों दिन ऑपरेशन और रखरखाव का काम होता है।
+
+कार्य पालियाँ:
+सामान्य पाली: सुबह नौ बजे से शाम छह बजे तक।
+सुबह की पाली: सात बजे से दोपहर दो बजे तक।
+शाम की पाली: दोपहर दो बजे से रात दस बजे तक।
+रात की पाली: रात दस बजे से सुबह सात बजे तक।`,
+
+    2: `खंड दो: सुरक्षा के प्रति हमारी प्रतिबद्धता।
+
+हमारा लक्ष्य है — किसी को कोई नुकसान न हो।
+एंड्रिट्ज में, सुरक्षा और स्वास्थ्य सबसे ऊपर है। हम हर उस व्यक्ति की रक्षा करते हैं जो हमसे जुड़ा है — चाहे वो कर्मचारी हो, ठेकेदार हो या आगंतुक हो।
+
+सुरक्षा काम से अलग नहीं है — यह हर काम में शामिल है।
+कोई भी दबाव या समय-सीमा सुरक्षा से ऊपर नहीं है।
+
+नेताओं की जिम्मेदारी है — हर फैसले में सुरक्षा को प्राथमिकता दें।
+सुपरवाइजर की जिम्मेदारी है — अपेक्षाएं तय करें, मार्गदर्शन दें, और असुरक्षित काम रोकें।
+साइट पर हर व्यक्ति की जिम्मेदारी है — नियमों का पालन करें और अपनी टीम का ख्याल रखें।
+
+CEO का संकल्प: एक बुरा वित्तीय परिणाम ठीक हो सकता है, लेकिन किसी की जान का नुकसान नहीं हो सकता।
+
+स्वास्थ्य, सुरक्षा और पर्यावरण नीति:
+एंड्रिट्ज बिना किसी समझौते के सभी कानूनी आवश्यकताओं का पालन करने के लिए प्रतिबद्ध है।
+मुख्य प्रतिबद्धताएं हैं:
+एक: एचएसई प्रबंधन प्रणालियों में निरंतर सुधार।
+दो: सभी के लिए सुरक्षित और उपयुक्त कार्य वातावरण।
+तीन: नियमित जोखिम पहचान और निवारण।
+चार: पर्यावरण की रक्षा और प्रदूषण की रोकथाम।
+पाँच: कर्मचारियों और हितधारकों के साथ खुला संवाद।`,
+
+    3: `खंड तीन: जीवन बचाने वाले आठ नियम।
+
+चेतावनी: इनमें से किसी भी नियम का उल्लंघन एक गंभीर सुरक्षा उल्लंघन है और आपको साइट से तुरंत हटाया जा सकता है।
+
+नियम एक: कार्य परमिट।
+किसी भी महत्वपूर्ण कार्य को शुरू करने से पहले वैध परमिट प्राप्त करें। परमिट यह सुनिश्चित करता है कि सभी जोखिमों की पहचान हो।
+
+नियम दो: खतरनाक ऊर्जा पर नियंत्रण।
+रखरखाव या कमीशनिंग कार्य शुरू करने से पहले सभी खतरनाक ऊर्जा स्रोतों को अलग करें। इसे लॉकआउट टैगआउट कहते हैं।
+
+नियम तीन: ऊंचाई पर काम।
+पहले से योजना बनाएं। काम शुरू करने से पहले सही उपकरण और बचाव योजना तैयार करें।
+
+नियम चार: सुरक्षित लिफ्टिंग।
+केवल प्रशिक्षित व्यक्ति ही भार का आकलन करें। लिफ्टिंग क्षेत्र को घेरें और भार को सही तरीके से बांधें।
+
+नियम पाँच: उपकरणों का सही उपयोग।
+उपकरणों को उनके निर्धारित उद्देश्य के लिए उपयोग करें। उपयोग से पहले जाँच करें।
+
+नियम छह: काम के लिए तैयार रहें।
+शारीरिक और मानसिक रूप से फिट रहें। कभी भी शराब, नशीली दवाओं या किसी भी नशे की हालत में काम न करें।
+
+नियम सात: सुरक्षित ड्राइविंग।
+सभी वाहन अच्छी स्थिति में हों। ड्राइवर सभी नियमों का पालन करें। केवल साइट वाहन ही पावरहाउस में प्रवेश कर सकते हैं।
+
+नियम आठ: बंद स्थान में प्रवेश।
+वायुमंडलीय परीक्षण करें, एक योग्य प्रहरी रखें, बचाव योजना तैयार करें और परमिट के अनुसार सही उपकरण का उपयोग करें।
+
+सुरक्षा क्यों जरूरी है?
+दुर्घटनाओं में दो प्रकार की लागत होती है।
+प्रत्यक्ष लागत: घायल या मृत कर्मचारियों को मुआवजा, चिकित्सा उपचार, उपकरणों की मरम्मत, और कानूनी जुर्माना।
+अप्रत्यक्ष लागत: उत्पादन हानि, प्रतिस्थापन प्रशिक्षण, कंपनी की प्रतिष्ठा की हानि, और श्रमिकों का मनोबल गिरना।`,
+
+    4: `खंड चार: आगंतुकों के लिए निर्देश और व्यक्तिगत सुरक्षा उपकरण।
+
+अनिवार्य पीपीई:
+ये वस्तुएं बिना किसी समझौते के जरूरी हैं। इनके बिना आपको साइट में प्रवेश नहीं दिया जाएगा।
+एक: सुरक्षा हेलमेट।
+दो: सुरक्षा जूते।
+तीन: परावर्तक जैकेट।
+
+अनिवार्य निर्देश:
+पहला: सुरक्षा हेलमेट, सुरक्षा जूते और परावर्तक जैकेट हर समय पहनें।
+दूसरा: केवल साइट वाहन ही पावरहाउस के अंदर प्रवेश कर सकते हैं।
+तीसरा: आपको हर समय एक जिम्मेदार व्यक्ति के साथ रहना होगा।
+चौथा: इस दस्तावेज पर हस्ताक्षर करके आप सभी सुरक्षा नियमों का पालन करने की सहमति देते हैं।
+पाँचवां: प्रशिक्षण के दौरान रक्तचाप की जाँच अनिवार्य है।
+
+आपातकालीन प्रक्रिया:
+यदि आप आपातकालीन सायरन सुनें:
+सुरक्षा निकास संकेतों का पालन करें।
+आपातकालीन असेंबली पॉइंट पर पहुंचें।
+शांत रहें, घबराएं नहीं।
+आगे के निर्देशों की प्रतीक्षा करें।
+HSE अधिकारी का नाम: श्री सूर्य कुमार है।
+
+साइट पर आपात स्थितियों के प्रकार:
+व्यक्तिगत, जैसे चिकित्सा आपात स्थिति और दुर्घटनाएं।
+आग, घरेलू या औद्योगिक।
+जैविक, जैसे महामारी या खाद्य विषाक्तता।
+प्राकृतिक आपदाएं, जैसे भूकंप, बाढ़ और भूस्खलन।
+
+कार्य परमिट प्रणाली:
+निम्नलिखित कार्य परमिट के बिना नहीं किए जा सकते:
+एक: गर्म काम। दो: ऊंचाई पर काम। तीन: लिफ्टिंग ऑपरेशन। चार: लॉकआउट टैगआउट। पाँच: बंद स्थान में प्रवेश।`,
+
+    5: `खंड पाँच: ज्ञान परीक्षण।
+
+कृपया नीचे दिए गए प्रश्नों के उत्तर सावधानी से दें।
+
+प्रश्न एक: साइट में प्रवेश करने से पहले कौन से पीपीई अनिवार्य हैं?
+सही उत्तर है — सुरक्षा हेलमेट, सुरक्षा जूते और परावर्तक जैकेट।
+
+प्रश्न दो: आपातकालीन सायरन सुनने पर क्या करना चाहिए?
+सही उत्तर है — निकास संकेतों का पालन करें, असेंबली पॉइंट पर पहुंचें, शांत रहें और निर्देशों की प्रतीक्षा करें।
+
+प्रश्न तीन: साइट पर आपकी सुरक्षा की जिम्मेदारी किसकी है?
+सही उत्तर है — सभी की — आपकी, आपके होस्ट की, सुपरवाइजर की और साइट प्रबंधन की।
+
+प्रश्न चार: क्या आप बिना परमिट के बंद स्थान में प्रवेश कर सकते हैं?
+सही उत्तर है — नहीं। कार्य परमिट, वायुमंडलीय परीक्षण और एक प्रहरी हमेशा आवश्यक हैं।
+
+कृपया अपने उत्तर दर्ज करें और आगे बढ़ें।`,
+
+    6: `खंड छह: आगंतुक पंजीकरण फॉर्म।
+
+कृपया नीचे दिए गए सभी आवश्यक विवरण भरें।
+आपका पूरा नाम, संगठन का नाम, मोबाइल नंबर, यात्रा का उद्देश्य, यात्रा का क्षेत्र, संपर्क व्यक्ति का नाम, यात्रा की तिथि और समय, पहचान प्रमाण का प्रकार और नंबर, तथा रक्तचाप की रीडिंग दर्ज करें।
+
+सभी तारांकित (*) फ़ील्ड अनिवार्य हैं।
+
+सहमति: नीचे दिए गए चेकबॉक्स को चेक करके, आप पुष्टि करते हैं कि आपने पारे HEP साइट के लिए सुरक्षा प्रशिक्षण पूरा कर लिया है और आप सभी नियमों का पालन करने के लिए सहमत हैं।
+
+फॉर्म सबमिट करने के बाद आपकी एंट्री पास ID जारी की जाएगी।`,
+
+    7: `बधाई हो! आपने सुरक्षा प्रशिक्षण सफलतापूर्वक पूरा कर लिया है।
+आपकी एंट्री साइट लॉग में दर्ज कर दी गई है।
+कृपया अपनी पास ID स्क्रीनशॉट लें या प्रिंट करें।
+साइट में प्रवेश करने से पहले याद रखें:
+हेलमेट पहनें, सुरक्षा जूते पहनें और परावर्तक जैकेट पहनें।
+हर समय अपने होस्ट के साथ रहें।
+किसी भी असुरक्षित स्थिति की रिपोर्ट HSE अधिकारी को करें।
+आपका स्वागत है — सुरक्षित रहें।`
+  };
+
+  /* ── TTS Engine ─────────────────────────────────────────────────── */
+  var synth    = window.speechSynthesis;
+  var playing  = false;
+  var paused   = false;
+  var currentSec = 1;
+  var hindiVoice = null;
+  var currentUtterance = null;
+
+  function initVoices() {
+    var voices = synth.getVoices();
+    // Priority: hi-IN > Hindi > any Indian voice
+    hindiVoice = voices.find(function(v){ return v.lang === 'hi-IN'; })
+              || voices.find(function(v){ return v.lang && v.lang.startsWith('hi'); })
+              || voices.find(function(v){ return v.name && v.name.toLowerCase().indexOf('hindi') !== -1; })
+              || null;
+
+    if (!hindiVoice) {
+      // Chrome loads voices asynchronously — wait and retry once
+      setTimeout(function(){
+        voices = synth.getVoices();
+        hindiVoice = voices.find(function(v){ return v.lang === 'hi-IN'; })
+                  || voices.find(function(v){ return v.lang && v.lang.startsWith('hi'); })
+                  || null;
+        if (!hindiVoice && voices.length > 0) {
+          // Fallback: use first available voice and note it
+          hindiVoice = voices[0];
+          document.getElementById('vb-sub').textContent = 'Hindi voice not found — using: ' + hindiVoice.name;
+        }
+      }, 1500);
+    } else {
+      document.getElementById('vb-sub').textContent = '🎙 ' + hindiVoice.name + ' — ' + hindiVoice.lang;
+    }
+
+    if (!synth) {
+      document.getElementById('vb-nosupport').style.display = 'block';
+      document.getElementById('vb-playpause').disabled = true;
+    }
+  }
+
+  if (synth) {
+    synth.onvoiceschanged = initVoices;
+    initVoices();
+  } else {
+    document.getElementById('vb-nosupport').style.display = 'block';
+  }
+
+  function getSpeed() {
+    return parseFloat(document.getElementById('vb-speed').value) || 1.0;
+  }
+
+  function setWave(on) {
+    var w = document.getElementById('vb-wave');
+    if (on) w.classList.add('playing');
+    else     w.classList.remove('playing');
+  }
+
+  function setStatus(txt) {
+    document.getElementById('vb-status').textContent = txt;
+  }
+
+  function readSection(secNum) {
+    if (!synth) return;
+    synth.cancel();
+    playing = false; paused = false;
+    currentSec = secNum;
+
+    var text = HINDI_SCRIPT[secNum];
+    if (!text) {
+      setStatus('इस खंड के लिए ऑडियो उपलब्ध नहीं है।');
+      return;
+    }
+
+    var utt = new SpeechSynthesisUtterance(text);
+    utt.lang  = 'hi-IN';
+    utt.rate  = getSpeed();
+    utt.pitch = 1.05;
+    if (hindiVoice) utt.voice = hindiVoice;
+
+    utt.onstart = function() {
+      playing = true; paused = false;
+      document.getElementById('vb-playpause').textContent = '⏸';
+      setWave(true);
+      setStatus('🔊 खंड ' + secNum + ' पढ़ा जा रहा है...');
+    };
+    utt.onpause = function() {
+      paused = true;
+      document.getElementById('vb-playpause').textContent = '▶';
+      setWave(false);
+      setStatus('⏸ रुका हुआ — फिर से सुनने के लिए ▶ दबाएं');
+    };
+    utt.onresume = function() {
+      paused = false;
+      document.getElementById('vb-playpause').textContent = '⏸';
+      setWave(true);
+      setStatus('🔊 खंड ' + secNum + ' पढ़ा जा रहा है...');
+    };
+    utt.onend = function() {
+      playing = false; paused = false;
+      document.getElementById('vb-playpause').textContent = '▶';
+      setWave(false);
+      setStatus('✅ खंड ' + secNum + ' पूरा हुआ — ↩ दबाएं या आगे बढ़ें');
+    };
+    utt.onerror = function(e) {
+      playing = false; paused = false;
+      document.getElementById('vb-playpause').textContent = '▶';
+      setWave(false);
+      if (e.error !== 'interrupted' && e.error !== 'canceled') {
+        setStatus('⚠️ त्रुटि: ' + e.error);
+      }
+    };
+
+    currentUtterance = utt;
+    synth.speak(utt);
+  }
+
+  function toggleVoice() {
+    if (!synth) return;
+    if (!playing && !paused) {
+      // Start fresh for current section
+      readSection(currentSec);
+    } else if (playing && !paused) {
+      synth.pause();
+    } else if (paused) {
+      synth.resume();
+    }
+  }
+
+  function stopVoice() {
+    if (!synth) return;
+    synth.cancel();
+    playing = false; paused = false;
+    document.getElementById('vb-playpause').textContent = '▶';
+    setWave(false);
+    setStatus('⏹ रोका गया — ▶ दबाएं फिर से सुनने के लिए');
+  }
+
+  function replayVoice() {
+    readSection(currentSec);
+  }
+
+  function changeSpeed() {
+    if (playing) {
+      // Restart with new speed from current section
+      readSection(currentSec);
+    }
+  }
+
+  /* ── Navigation ─────────────────────────────────────────────────── */
+  var TOTAL = 7;
+
+  function goTo(n) {
+    document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById('sec' + n).classList.add('active');
+    document.getElementById('pfill').style.width = ((n - 1) / (TOTAL - 1) * 100) + '%';
+    document.getElementById('step-label').textContent = 'Step ' + n + ' / ' + TOTAL;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Auto-stop previous, update section, auto-play new section
+    synth && synth.cancel();
+    playing = false; paused = false;
+    currentSec = n;
+    document.getElementById('vb-playpause').textContent = '▶';
+    setWave(false);
+
+    var sectionNames = {
+      1: 'स्वागत एवं साइट परिचय',
+      2: 'सुरक्षा नीति',
+      3: 'जीवन बचाने वाले 8 नियम',
+      4: 'आगंतुक निर्देश एवं PPE',
+      5: 'ज्ञान परीक्षण',
+      6: 'पंजीकरण फॉर्म',
+      7: 'प्रशिक्षण पूर्ण'
+    };
+    setStatus('▶ Play दबाएं — ' + (sectionNames[n] || 'खंड ' + n));
+
+    // Auto-play each new section (delay to let page render)
+    setTimeout(function(){ readSection(n); }, 400);
+  }
+
+  /* ── Tabs ───────────────────────────────────────────────────────── */
+  function switchTab(btn, id) {
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.tab-pane').forEach(function(p){ p.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById(id).classList.add('active');
+  }
+
+  /* ── Mandatory checklist ─────────────────────────────────────────── */
+  function updateMandatory() {
+    var boxes = document.querySelectorAll('#mandatory-checks input');
+    var all   = Array.from(boxes).every(function(b){ return b.checked; });
+    var st    = document.getElementById('mandatory-status');
+    if (all) {
+      st.textContent  = 'All mandatory requirements acknowledged.';
+      st.style.color  = 'var(--safe)';
+    } else {
+      st.textContent  = 'Please tick all items above to proceed.';
+      st.style.color  = 'var(--gray)';
+    }
+  }
+
+  /* ── Quiz ───────────────────────────────────────────────────────── */
+  var ANSWERS = { q1: 'b', q2: 'c', q3: 'c', q4: 'b' };
+  function checkQuiz() {
+    var score = 0;
+    Object.keys(ANSWERS).forEach(function(q) {
+      var sel = document.querySelector('input[name="' + q + '"]:checked');
+      var fb  = document.getElementById('qf' + q.slice(1));
+      fb.style.display = 'block';
+      if (!sel) {
+        fb.className  = 'quiz-feedback wrong';
+        fb.textContent = 'Please select an answer.';
+      } else if (sel.value === ANSWERS[q]) {
+        fb.className  = 'quiz-feedback correct';
+        fb.textContent = 'Correct!';
+        score++;
+      } else {
+        fb.className  = 'quiz-feedback wrong';
+        fb.textContent = 'Incorrect. Please review the induction and try again.';
+      }
+    });
+    var res = document.getElementById('quiz-result');
+    if (score === 4) {
+      res.style.color = 'var(--safe)';
+      res.textContent = 'All correct! You may proceed.';
+      document.getElementById('btn-quiz-next').disabled = false;
+    } else {
+      res.style.color = 'var(--danger)';
+      res.textContent = score + '/4 correct. Please review and retry.';
+      document.getElementById('btn-quiz-next').disabled = true;
+    }
+  }
+
+  /* ── Consent ────────────────────────────────────────────────────── */
+  function updateConsentBtn() {
+    document.getElementById('btn-submit').disabled = !document.getElementById('consent-cb').checked;
+  }
+
+  /* ── Form Submit ─────────────────────────────────────────────────── */
+  function submitForm() {
+    var required = ['f-name','f-org','f-mobile','f-purpose','f-area','f-date','f-timein','f-host','f-idtype','f-idnum','f-bp'];
+    var missing  = required.filter(function(id){ return !document.getElementById(id).value.trim(); });
+    var errEl    = document.getElementById('form-error');
+    if (missing.length) {
+      errEl.style.display = 'block';
+      errEl.textContent   = 'Please fill all required fields before submitting.';
+      return;
+    }
+    errEl.style.display = 'none';
+    var passId = 'VIS-' + Date.now().toString().slice(-6);
+    document.getElementById('pass-id').textContent = passId;
+    document.getElementById('submit-overlay').classList.add('show');
+
+    var dateVal   = document.getElementById('f-date').value;
+    var dateParts = dateVal ? dateVal.split('-') : ['','',''];
+    var timeVal   = document.getElementById('f-timein').value;
+    var timeParts = timeVal ? timeVal.split(':') : ['',''];
+    var idCombined = document.getElementById('f-idtype').value + ' - ' + document.getElementById('f-idnum').value;
+
+    var FORM_ACTION = 'https://docs.google.com/forms/d/e/1FAIpQLSezJ6f_pB3bPPvcZL1w_t-cwKQ6qXnn4BLaxQONdD_hBX0MKA/formResponse';
+    var fields = {
+      'entry.1104993092':        document.getElementById('f-name').value,
+      'entry.588372971':         document.getElementById('f-org').value,
+      'entry.819725668':         document.getElementById('f-mobile').value,
+      'entry.1177683264':        document.getElementById('f-purpose').value,
+      'entry.1053711216':        document.getElementById('f-area').value,
+      'entry.1960355008':        document.getElementById('f-host').value,
+      'entry.659276636':         idCombined,
+      'entry.1257435586_hour':   timeParts[0],
+      'entry.1257435586_minute': timeParts[1],
+      'entry.1679077126_year':   dateParts[0],
+      'entry.1679077126_month':  String(parseInt(dateParts[1], 10)),
+      'entry.1679077126_day':    String(parseInt(dateParts[2], 10))
+    };
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = FORM_ACTION;
+    form.target = 'hidden_iframe';
+    Object.keys(fields).forEach(function(name) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = name; inp.value = fields[name];
+      form.appendChild(inp);
+    });
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+    setTimeout(function() {
+      document.getElementById('submit-overlay').classList.remove('show');
+      goTo(7);
+    }, 2500);
+  }
+
+  /* ── Init ───────────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function() {
+    var today = new Date().toISOString().split('T')[0];
+    document.getElementById('f-date').value = today;
+    // Auto-read section 1 on load (with delay for voices to load)
+    setTimeout(function(){ readSection(1); }, 1800);
+  });
+</script>
+</body>
+</html>
